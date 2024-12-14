@@ -14,7 +14,7 @@ in runTests {
   };
   testAoc2a = {
     expr = aoc.aoc2a (lib.readFile ./aoc2.txt);
-    expected = 24316233;
+    expected = 252;
   };
   testIsReportSafe = {
     expr = aoc.isReportSafe [1 2 4 5 6];
