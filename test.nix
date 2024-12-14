@@ -8,6 +8,10 @@ in runTests {
     expr = aoc.aoc1a (lib.readFile ./aoc1.txt);
     expected = 1666427;
   };
+  testAoc1b = {
+    expr = aoc.aoc1b (lib.readFile ./aoc1.txt);
+    expected = 24316233;
+  };
   testQuickSort = {
     expr = aoc.quicksort [2 6 23 6 8 9];
     expected = [2 6 6 8 9 23];
