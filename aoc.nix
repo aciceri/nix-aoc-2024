@@ -20,8 +20,16 @@ lib: let
     })
       {inc = null; previousLevel = lib.lists.head report; safe = true;} (lib.lists.tail report);
   in (_isSafe report).safe;
+
+  isReportSafeTollerant = report: let
+    reportCombinations = builtins.genList (n: let 
+      before = (lib.lists.take n report);
+      after = (lib.lists.take ((lib.lists.length report)-n) (lib.lists.drop (n+1) report));
+      in isReportSafe (before ++ after)
+    ) (lib.lists.length report); 
+  in (builtins.any (a: a) reportCombinations);
 in {
-  inherit quicksort isReportSafe;
+  inherit quicksort isReportSafe isReportSafeTollerant;
   
   aoc1a = input: let
     lines = lib.strings.splitString "\n" input;
@@ -55,6 +63,16 @@ in {
     ls = lib.lists.map splitLine lines';
     reports = lib.lists.map (lib.lists.map builtins.fromJSON) ls;
     countSafe = builtins.foldl' (acc: report: acc + (if isReportSafe report then 1 else 0)) 0 reports;
+    result = countSafe;
+  in result;
+
+  aoc2b = input: let
+    lines = lib.strings.splitString "\n" input;
+    lines' = lib.lists.take (lib.lists.length lines - 1) lines;
+    splitLine = lib.strings.splitString " ";
+    ls = lib.lists.map splitLine lines';
+    reports = lib.lists.map (lib.lists.map builtins.fromJSON) ls;
+    countSafe = builtins.foldl' (acc: report: acc + (if isReportSafeTollerant report then 1 else 0)) 0 reports;
     result = countSafe;
   in result;
 }

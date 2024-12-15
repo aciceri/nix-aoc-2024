@@ -16,9 +16,21 @@ in runTests {
     expr = aoc.aoc2a (lib.readFile ./aoc2.txt);
     expected = 252;
   };
+  testAoc2b = {
+    expr = aoc.aoc2b (lib.readFile ./aoc2.txt);
+    expected = 324;
+  };
   testIsReportSafe = {
     expr = aoc.isReportSafe [1 2 4 5 6];
     expected = true;
+  };
+  testIsReportSafeWithTollerance = {
+    expr = aoc.isReportSafeTollerant  [5 2 4 5 6];
+    expected = true;
+  };
+  testIsReportSafeWithTolleranceOnyOneTime = {
+    expr = aoc.isReportSafeTollerant  [5 2 4 5 1];
+    expected = false;
   };
   testIsReportSafeIsUnsafeIfIncreasingMoreThanThree = {
     expr = aoc.isReportSafe [1 4 8 9];
