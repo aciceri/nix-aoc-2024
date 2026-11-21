@@ -15,4 +15,8 @@
     expr = aoc.aoc2b (lib.readFile ./aoc2.txt);
     expected = 324;
   };
+  testAoc3a = {
+    expr = aoc.aoc3a (lib.readFile ./aoc3.txt);
+    expected = 164730528;
+  };
 }

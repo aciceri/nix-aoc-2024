@@ -7,4 +7,10 @@ lib: rec {
   in smallerSorted ++ [x] ++ biggerSorted;
 
   abs = n: if n >= 0 then n else -n;
+
+  toInt = builtins.fromJSON;
+
+  isDigit = c: builtins.elem c (lib.strings.stringToCharacters "0123456789");
+
+  isAlpha = c: builtins.elem c (lib.strings.stringToCharacters "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
 }
