@@ -4,45 +4,4 @@ let
   inherit (lib) runTests;
   aoc = import ./aoc.nix lib;
   utils = import ./utils.nix lib;
-in runTests {
-  testAoc1a = {
-    expr = aoc.aoc1a (lib.readFile ./aoc1.txt);
-    expected = 1666427;
-  };
-  testAoc1b = {
-    expr = aoc.aoc1b (lib.readFile ./aoc1.txt);
-    expected = 24316233;
-  };
-  testAoc2a = {
-    expr = aoc.aoc2a (lib.readFile ./aoc2.txt);
-    expected = 252;
-  };
-  testAoc2b = {
-    expr = aoc.aoc2b (lib.readFile ./aoc2.txt);
-    expected = 324;
-  };
-  testIsReportSafe = {
-    expr = aoc.isReportSafe [1 2 4 5 6];
-    expected = true;
-  };
-  testIsReportSafeWithTollerance = {
-    expr = aoc.isReportSafeTollerant  [5 2 4 5 6];
-    expected = true;
-  };
-  testIsReportSafeWithTolleranceOnyOneTime = {
-    expr = aoc.isReportSafeTollerant  [5 2 4 5 1];
-    expected = false;
-  };
-  testIsReportSafeIsUnsafeIfIncreasingMoreThanThree = {
-    expr = aoc.isReportSafe [1 4 8 9];
-    expected = false;
-  };
-  testIsReportSafeNotMonotonic = {
-    expr = aoc.isReportSafe [1 1];
-    expected = false;
-  };
-  testQuickSort = {
-    expr = utils.quicksort [2 6 23 6 8 9];
-    expected = [2 6 6 8 9 23];
-  };
-}
+in runTests (import ./test-solutions.nix { inherit lib aoc; } // import ./test-unit.nix { inherit aoc utils; })
