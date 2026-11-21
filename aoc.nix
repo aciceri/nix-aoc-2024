@@ -17,16 +17,28 @@ lib: let
   lex = input: let
     chars = lib.strings.stringToCharacters input;
     isWordChar = c: isAlpha c || c == "_" || c == "'";
-    classOf = c: if isDigit c then "num" else if isWordChar c then "ident" else "punct";
+    classOf = c:
+      if isDigit c
+      then "num"
+      else if isWordChar c
+           then "ident"
+           else "punct";
     initial = { tokens = []; current = null; };
-    flush = acc: if acc.current == null then acc.tokens else acc.tokens ++ [acc.current];
+    flush = acc:
+      if acc.current == null
+      then acc.tokens
+      else acc.tokens ++ [acc.current];
     step = acc: c: let
       class = classOf c;
-      continues = acc.current != null && acc.current.type == class && class != "punct";
+      sameClass = acc.current != null && acc.current.type == class;
+      continues = sameClass && class != "punct";
       extended = acc.current // { text = acc.current.text + c; };
       flushed = flush acc;
-    in if continues then builtins.seq extended.text (acc // { current = extended; })
-      else builtins.seq flushed { tokens = flushed; current = { type = class; text = c; }; };
+      started = { type = class; text = c; };
+    in
+      if continues
+      then builtins.seq extended.text (acc // { current = extended; })
+      else builtins.seq flushed { tokens = flushed; current = started; };
     scanned = builtins.foldl' step initial chars;
     result = flush scanned;
   in result;
@@ -36,25 +48,62 @@ lib: let
     isNum = t: t.type == "num" && builtins.stringLength t.text <= 3;
     isPunct = p: t: t.type == "punct" && t.text == p;
     shape = [ isMul (isPunct "(") isNum (isPunct ",") isNum (isPunct ")") ];
-    matchesAt = i: builtins.all (k: (builtins.elemAt shape k) (builtins.elemAt tokens (i + k))) (lib.lists.range 0 5);
+    shapeLength = builtins.length shape;
+    tokenAt = i: builtins.elemAt tokens i;
+    predicateAt = k: builtins.elemAt shape k;
+    indexes = lib.lists.range 0 (shapeLength - 1);
+    matchesAt = i: builtins.all (k: predicateAt k (tokenAt (i + k))) indexes;
     mulAt = i: let
-      left = builtins.elemAt tokens (i + 2);
-      right = builtins.elemAt tokens (i + 4);
+      left = tokenAt (i + 2);
+      right = tokenAt (i + 4);
     in { op = "mul"; left = toInt left.text; right = toInt right.text; };
-    starts = lib.lists.range 0 (builtins.length tokens - 6);
-    result = builtins.map mulAt (builtins.filter matchesAt starts);
+    starts = lib.lists.range 0 (builtins.length tokens - shapeLength);
+    matchingStarts = builtins.filter matchesAt starts;
+    result = builtins.map mulAt matchingStarts;
+  in result;
+
+  parseInstructions = tokens: let
+    isWordEnding = w: t: t.type == "ident" && lib.strings.hasSuffix w t.text;
+    isNum = t: t.type == "num" && builtins.stringLength t.text <= 3;
+    isPunct = p: t: t.type == "punct" && t.text == p;
+    tokenAt = i: builtins.elemAt tokens i;
+    numAt = i: toInt (tokenAt i).text;
+    mulRule = {
+      shape = [ (isWordEnding "mul") (isPunct "(") isNum (isPunct ",") isNum (isPunct ")") ];
+      build = i: { op = "mul"; left = numAt (i + 2); right = numAt (i + 4); };
+    };
+    doRule = {
+      shape = [ (isWordEnding "do") (isPunct "(") (isPunct ")") ];
+      build = i: { op = "do"; };
+    };
+    dontRule = {
+      shape = [ (isWordEnding "don't") (isPunct "(") (isPunct ")") ];
+      build = i: { op = "dont"; };
+    };
+    grammar = [ mulRule doRule dontRule ];
+    fits = i: shape: i + builtins.length shape <= builtins.length tokens;
+    matchesShape = i: shape: let
+      indexes = lib.lists.range 0 (builtins.length shape - 1);
+      predicateHolds = k: (builtins.elemAt shape k) (tokenAt (i + k));
+    in fits i shape && builtins.all predicateHolds indexes;
+    matchesAt = i: rule: matchesShape i rule.shape;
+    instructionsAt = i: let
+      matchingRules = builtins.filter (matchesAt i) grammar;
+    in builtins.map (rule: rule.build i) matchingRules;
+    positions = lib.lists.range 0 (builtins.length tokens - 1);
+    result = builtins.concatMap instructionsAt positions;
   in result;
 
   isReportSafeTollerant = report: let
-    reportCombinations = builtins.genList (n: let 
+    reportCombinations = builtins.genList (n: let
       before = (lib.lists.take n report);
       after = (lib.lists.take ((lib.lists.length report)-n) (lib.lists.drop (n+1) report));
       in isReportSafe (before ++ after)
-    ) (lib.lists.length report); 
+    ) (lib.lists.length report);
   in (builtins.any (a: a) reportCombinations);
 in {
-  inherit isReportSafe isReportSafeTollerant lex parseMuls;
-  
+  inherit isReportSafe isReportSafeTollerant lex parseMuls parseInstructions;
+
   aoc1a = input: let
     lines = lib.strings.splitString "\n" input;
     lines' = lib.lists.take (lib.lists.length lines - 1) lines;
@@ -67,7 +116,7 @@ in {
     sortedZippedList = lib.lists.zipLists sortedListLeft sortedListRight;
     result = builtins.foldl' (acc: item: acc + (abs (item.fst - item.snd))) 0 sortedZippedList;
   in result;
-  
+
   aoc1b = input: let
     lines = lib.strings.splitString "\n" input;
     lines' = lib.lists.take (lib.lists.length lines - 1) lines;
@@ -101,7 +150,26 @@ in {
   in result;
 
   aoc3a = input: let
-    muls = parseMuls (lex input);
-    result = builtins.foldl' (acc: m: acc + m.left * m.right) 0 muls;
+    tokens = lex input;
+    muls = parseMuls tokens;
+    product = m: m.left * m.right;
+    result = builtins.foldl' (acc: m: acc + product m) 0 muls;
+  in result;
+
+  aoc3b = input: let
+    tokens = lex input;
+    instructions = parseInstructions tokens;
+    initial = { enabled = true; sum = 0; };
+    product = instr: instr.left * instr.right;
+    step = acc: instr:
+      if instr.op == "do"
+      then acc // { enabled = true; }
+      else if instr.op == "dont"
+           then acc // { enabled = false; }
+           else if acc.enabled
+                then acc // { sum = acc.sum + product instr; }
+                else acc;
+    executed = builtins.foldl' step initial instructions;
+    result = executed.sum;
   in result;
 }

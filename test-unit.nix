@@ -34,6 +34,21 @@
     expr = aoc.parseMuls (aoc.lex "mul(1234,5)");
     expected = [];
   };
+  testParseInstructions = {
+    expr = aoc.parseInstructions (aoc.lex "xmul(2,4)&mul[3,7]!^don't()_mul(5,5)+mul(32,64](mul(11,8)undo()?mul(8,5))");
+    expected = [
+      { op = "mul"; left = 2; right = 4; }
+      { op = "dont"; }
+      { op = "mul"; left = 5; right = 5; }
+      { op = "mul"; left = 11; right = 8; }
+      { op = "do"; }
+      { op = "mul"; left = 8; right = 5; }
+    ];
+  };
+  testAoc3bExample = {
+    expr = aoc.aoc3b "xmul(2,4)&mul[3,7]!^don't()_mul(5,5)+mul(32,64](mul(11,8)undo()?mul(8,5))";
+    expected = 48;
+  };
   testIsReportSafe = {
     expr = aoc.isReportSafe [1 2 4 5 6];
     expected = true;
