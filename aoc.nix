@@ -1,13 +1,6 @@
 lib: let
-  quicksort = l: if l == [] then [] else let
-    x = builtins.head l;
-    xs = builtins.tail l;
-    smallerSorted = quicksort (lib.lists.filter (a: a <= x) xs);
-    biggerSorted = quicksort (lib.lists.filter (a: a > x) xs);
-  in smallerSorted ++ [x] ++ biggerSorted;
-  
-  abs = n: if n >= 0 then n else -n;
-  
+  inherit (import ./utils.nix lib) quicksort abs;
+
   isReportSafe = report: let
     _isSafe = report: builtins.foldl'
     (acc: level: let
@@ -29,7 +22,7 @@ lib: let
     ) (lib.lists.length report); 
   in (builtins.any (a: a) reportCombinations);
 in {
-  inherit quicksort isReportSafe isReportSafeTollerant;
+  inherit isReportSafe isReportSafeTollerant;
   
   aoc1a = input: let
     lines = lib.strings.splitString "\n" input;
@@ -74,5 +67,9 @@ in {
     reports = lib.lists.map (lib.lists.map builtins.fromJSON) ls;
     countSafe = builtins.foldl' (acc: report: acc + (if isReportSafeTollerant report then 1 else 0)) 0 reports;
     result = countSafe;
+  in result;
+
+  aoc3a = input: let
+    result = input;
   in result;
 }
